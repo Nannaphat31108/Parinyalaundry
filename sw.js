@@ -1,7 +1,7 @@
 /* Service worker: ใช้งานออฟไลน์ได้
    - ไฟล์ของแอป (HTML/JS/CSS): ดึงจากเน็ตก่อน เพื่อให้ได้เวอร์ชันล่าสุดทันที ถ้าออฟไลน์ใช้ของในแคช
    - ไฟล์ภายนอก (ฟอนต์): ใช้แคชก่อน แล้วอัปเดตเบื้องหลัง */
-const V = 'parinya-laundry-v1';
+const V = 'parinya-laundry-v2';
 const F = [
   './', './index.html', './manifest.webmanifest',
   './assets/css/app.css',

@@ -35,25 +35,24 @@ function followItem(c) {
   const st = pkgStatus(c), p = pkgById(c.pkgId), total = p ? p.pieces : Math.max(c.left, 1);
   const pct = Math.max(0, Math.min(100, c.left / total * 100));
   const dl = daysBetween(today(), c.exp);
-  return `<div class="follow">
+  return `<div class="fl">
     ${avatar(c)}
-    <div class="follow-main">
-      <div class="follow-top"><b>${esc(c.name)}</b>${badge(st.label, st.tone)}</div>
-      <div class="follow-sub">${esc(c.pkgName)} · ${dl < 0 ? 'หมดอายุแล้ว ' + Math.abs(dl) + ' วัน' : dl === 0 ? 'หมดอายุวันนี้' : 'หมดอายุใน ' + dl + ' วัน'} (${dTh(c.exp)})</div>
-      <div class="meter ${st.tone}"><span style="width:${pct}%"></span></div>
-      <div class="follow-meta"><span>${c.left < 0 ? `<b class="owed">เกิน ${-c.left} ชิ้น</b> · หักจากแพ็คเกจถัดไป` : `เหลือ <b>${c.left}</b> / ${total} ชิ้น`}</span></div>
+    <div class="fl-main">
+      <div class="fl-top"><b>${esc(c.name)}</b>${badge(st.label, st.tone)}</div>
+      <div class="fl-sub">${esc(c.pkgName)} · ${dl < 0 ? 'หมดอายุแล้ว ' + Math.abs(dl) + ' วัน' : dl === 0 ? 'หมดอายุวันนี้' : 'อีก ' + dl + ' วัน'} · ${c.left < 0 ? `<b class="owed">เกิน ${-c.left} ชิ้น</b>` : `เหลือ <b>${c.left}</b>/${total}`}</div>
+      <div class="meter sm ${st.tone}"><span style="width:${pct}%"></span></div>
     </div>
-    <button class="btn btn-soft btn-sm" data-act="buyPkg" data-id="${c.id}">${icon('refresh')}ต่อแพ็คเกจ</button>
+    <button class="btn btn-outline btn-sm" data-act="buyPkg" data-id="${c.id}">${icon('refresh')}<span class="hide-xs">ต่อแพ็คเกจ</span></button>
   </div>`;
 }
 
 function rcRow(r) {
-  return `<div class="rc-row ${r.void ? 'is-void' : ''}">
-    <span class="rc-row-ic ${r.kind === 'pkg' ? 'pink' : 'indigo'}">${icon(r.kind === 'pkg' ? 'package' : 'washer')}</span>
-    <div class="rc-row-main"><b>${esc(r.name)}</b><small>${esc(r.no)} · ${dTh(r.date)} ${r.time || ''}</small></div>
-    ${r.void ? badge('ยกเลิกแล้ว', 'danger') : ''}
-    <span class="rc-row-amt">${money(r.total)}</span>
-    <button class="icon-btn" data-act="reprint" data-no="${esc(r.no)}" title="ดู / พิมพ์" aria-label="ดูใบเสร็จ ${esc(r.no)}">${icon('eye')}</button>
+  return `<div class="rr ${r.void ? 'is-void' : ''}">
+    <span class="rr-ic ${r.kind === 'pkg' ? 'pkg' : 'wash'}">${icon(r.kind === 'pkg' ? 'package' : 'washer')}</span>
+    <div class="rr-main"><b>${esc(r.name)}</b><small>${esc(r.no)} · ${dTh(r.date)} ${r.time || ''}</small></div>
+    ${r.void ? badge('ยกเลิก', 'danger') : ''}
+    <span class="rr-amt">${money(r.total)}</span>
+    <button class="icon-btn ghost" data-act="reprint" data-no="${esc(r.no)}" title="ดู / พิมพ์" aria-label="ดูใบเสร็จ ${esc(r.no)}">${icon('chevronRight')}</button>
   </div>`;
 }
 
@@ -72,70 +71,65 @@ V.home = {
 
     const days = Array.from({ length: 7 }, (_, i) => addDays(i - 6));
     const chart = columnChart({
-      label: 'รายรับ 7 วันล่าสุด',
+      label: 'รายรับ 7 วันล่าสุด', height: 150,
       cats: days.map(d => { const dd = parseD(d); return { label: d === t ? 'วันนี้' : TH_DAYS[dd.getDay()].slice(0, 2) + '.', full: dTh(d), hl: d === t }; }),
-      series: [{ name: 'รายรับ', color: 'var(--c-income)', data: days.map(incOf), labelAt: i => i === 6 }]
+      series: [{ name: 'รายรับ', color: 'var(--chart-dark)', data: days.map(incOf), labelAt: i => i === 6 }]
     });
     const week = sumBy(days, incOf);
 
     const age = backupAge();
     const backupTip = !syncOn()
-      ? `<div class="alert alert-info slim">${icon('cloud')}<div><b>ข้อมูลอยู่เฉพาะในเครื่องนี้</b> — เครื่องอื่นจะไม่เห็นข้อมูลชุดนี้จนกว่าจะเชื่อมหลายเครื่อง${age == null || age > 7 ? ` · ${age == null ? 'ยังไม่เคยสำรองข้อมูล' : 'สำรองล่าสุด ' + age + ' วันก่อน'}` : ''}</div>
-          <div class="tip-btns"><button class="btn btn-sm btn-primary" data-act="syncSetupGo">${icon('link')}เชื่อมหลายเครื่อง</button>${age == null || age > 7 ? `<button class="btn btn-sm btn-soft" data-act="backup">${icon('download')}สำรอง</button>` : ''}</div></div>` : '';
+      ? `<div class="notice">${icon('cloud')}<div><b>ข้อมูลอยู่เฉพาะในเครื่องนี้</b><span>เครื่องอื่นจะไม่เห็นข้อมูลจนกว่าจะเชื่อมหลายเครื่อง${age == null || age > 7 ? ` · ${age == null ? 'ยังไม่เคยสำรองข้อมูล' : 'สำรองล่าสุด ' + age + ' วันก่อน'}` : ''}</span></div>
+          <div class="tip-btns">${age == null || age > 7 ? `<button class="btn btn-sm btn-ghost" data-act="backup">${icon('download')}สำรอง</button>` : ''}<button class="btn btn-sm btn-dark" data-act="syncSetupGo">${icon('link')}เชื่อมหลายเครื่อง</button></div></div>` : '';
 
     const qa = [
-      ['order', 'รับผ้า / คิดเงิน', 'บันทึกรายการและออกใบเสร็จ', 'washer', 'indigo'],
-      ['cust', 'ลูกค้า / ต่อแพ็คเกจ', 'ค้นหา เพิ่ม และต่ออายุสมาชิก', 'users', 'green'],
-      ['acct', 'บัญชี', 'รายรับ รายจ่าย และรายงาน', 'wallet', 'amber'],
-      ['pkg', 'แพ็คเกจ', 'ตั้งราคาแพ็คเกจรายเดือน', 'package', 'pink']
+      ['order', 'รับผ้า / คิดเงิน', 'เปิดบิลใหม่', 'washer'],
+      ['cust', 'ลูกค้า', 'ค้นหา · ต่อแพ็คเกจ', 'users'],
+      ['acct', 'บัญชี', 'รายรับ · รายจ่าย', 'wallet'],
+      ['pkg', 'แพ็คเกจ', 'ตั้งราคารายเดือน', 'package']
     ];
+    const kpi = (ic, label, val, note = '') => `<article class="b-kpi"><span class="b-kpi-ic">${icon(ic)}</span><small>${label}</small><b>${val}</b>${note ? `<em>${note}</em>` : ''}</article>`;
 
     return `
-      <section class="hero">
-        <div class="hero-bubbles" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
-        <div class="hero-text">
-          <span class="hero-eyebrow">${icon('sparkles')}${greet}</span>
-          <h1>${esc(db.shop.name)}</h1>
-          <p>${dLong()}</p>
-          <div class="hero-actions">
-            <a class="btn btn-white" href="#/order">${icon('plus')}รับผ้าใหม่</a>
-            <a class="btn btn-glass" href="#/rc">${icon('receipt')}ใบเสร็จทั้งหมด</a>
-          </div>
+      <header class="greet">
+        <div>
+          <span class="eyebrow">${icon(h >= 18 || h < 6 ? 'moon' : 'sun')}${greet} · ${dLong()}</span>
+          <h1>ภาพรวมวันนี้</h1>
         </div>
-        <div class="hero-kpi">
-          <span>รายรับวันนี้</span>
-          <b>${money(inc)}</b>
-          <small class="${diff >= 0 ? 'up' : 'down'}">${icon(diff >= 0 ? 'trendUp' : 'trendDown')}${diff === 0 ? 'เท่ากับเมื่อวาน' : (diff > 0 ? 'มากกว่า' : 'น้อยกว่า') + 'เมื่อวาน ' + money(Math.abs(diff))}</small>
+        <div class="greet-actions">
+          <a class="btn btn-ghost" href="#/rc">${icon('receipt')}ใบเสร็จ</a>
+          <a class="btn btn-primary" href="#/order">${icon('plus')}รับผ้าใหม่</a>
         </div>
-      </section>
+      </header>
 
       ${backupTip}
 
-      <section class="qa-grid">
-        ${qa.map(([k, l, d, ic, tone]) => `<a class="qa qa-${tone}" href="#/${k}"><span class="qa-ic">${icon(ic)}</span><span class="qa-text"><b>${l}</b><small>${d}</small></span><span class="qa-go">${icon('arrowRight')}</span></a>`).join('')}
+      <section class="bento">
+        <article class="b-rev">
+          <div class="b-rev-top">
+            <div><small>รายรับวันนี้</small><b>${money(inc)}</b></div>
+            <span class="delta ${diff > 0 ? 'up' : diff < 0 ? 'down' : ''}">${icon(diff >= 0 ? 'trendUp' : 'trendDown')}${diff === 0 ? 'เท่าเมื่อวาน' : (diff > 0 ? '+' : '−') + money(Math.abs(diff))}</span>
+          </div>
+          <div class="b-rev-chart">${chart}</div>
+          <div class="b-rev-foot"><span>7 วันล่าสุด <b>${money(week)}</b></span><a href="#/acct">ดูบัญชี ${icon('arrowRight')}</a></div>
+        </article>
+        ${kpi('receipt', 'บิลรับผ้าวันนี้', bills, 'บิล')}
+        ${kpi('users', 'สมาชิกแพ็คเกจ', actives, 'ใช้งานอยู่')}
+        ${kpi('bell', 'ต้องติดตาม', low.length, low.length ? 'ใกล้หมด/หมดอายุ' : 'เรียบร้อย')}
+        <nav class="b-actions" aria-label="ทางลัด">
+          ${qa.map(([k, l, d, ic]) => `<a class="act" href="#/${k}"><span class="act-ic">${icon(ic)}</span><span class="act-txt"><b>${l}</b><small>${d}</small></span>${icon('arrowRight', 'act-go')}</a>`).join('')}
+        </nav>
       </section>
 
-      <section class="stat-grid">
-        <div class="stat"><span class="stat-ic tone-indigo">${icon('coins')}</span><div><small>รายรับวันนี้ (บาท)</small><b>${fm(inc)}</b></div></div>
-        <div class="stat"><span class="stat-ic tone-cyan">${icon('receipt')}</span><div><small>บิลรับผ้าวันนี้</small><b>${bills}</b></div></div>
-        <div class="stat"><span class="stat-ic tone-green">${icon('users')}</span><div><small>ลูกค้าแพ็คเกจที่ใช้งานอยู่</small><b>${actives}</b></div></div>
-        <div class="stat"><span class="stat-ic tone-amber">${icon('bell')}</span><div><small>ใกล้หมด / ใกล้หมดอายุ</small><b>${low.length}</b></div></div>
-      </section>
-
-      <section class="split">
-        <div class="card">
-          <div class="card-head"><div><h2>รายรับ 7 วันล่าสุด</h2><p>รวม ${money(week)}</p></div><a class="link" href="#/acct">ดูบัญชี ${icon('chevronRight')}</a></div>
-          ${chart}
+      <section class="duo">
+        <div class="panel">
+          <div class="panel-head"><div><h2>ต้องติดตาม</h2><p>เหลือ ≤ ${cfg().lowLeft} ชิ้น หรือหมดอายุภายใน ${cfg().warnDays} วัน</p></div>${low.length ? `<span class="count-pill">${low.length}</span>` : ''}</div>
+          ${low.length ? `<div class="fl-list">${low.map(followItem).join('')}</div>` : empty('checkCircle', 'ไม่มีรายการต้องติดตาม', 'ลูกค้าแพ็คเกจทุกคนยังมียอดคงเหลือเพียงพอ')}
         </div>
-        <div class="card">
-          <div class="card-head"><div><h2>ต้องติดตาม</h2><p>แพ็คเกจเหลือ ≤ ${cfg().lowLeft} ชิ้น หรือหมดอายุภายใน ${cfg().warnDays} วัน</p></div>${low.length ? `<span class="count-pill">${low.length}</span>` : ''}</div>
-          ${low.length ? `<div class="follow-list">${low.map(followItem).join('')}</div>` : empty('checkCircle', 'ไม่มีรายการต้องติดตาม', 'ลูกค้าแพ็คเกจทุกคนยังมียอดคงเหลือเพียงพอ')}
+        <div class="panel">
+          <div class="panel-head"><div><h2>ใบเสร็จล่าสุด</h2><p>6 รายการล่าสุด</p></div><a class="link" href="#/rc">ทั้งหมด ${icon('chevronRight')}</a></div>
+          ${rec.length ? `<div class="rr-list">${rec.map(rcRow).join('')}</div>` : empty('receipt', 'ยังไม่มีใบเสร็จ', 'เริ่มรับผ้ารายการแรกได้เลย', `<a class="btn btn-primary" href="#/order">${icon('plus')}รับผ้าใหม่</a>`)}
         </div>
-      </section>
-
-      <section class="card">
-        <div class="card-head"><div><h2>ใบเสร็จล่าสุด</h2><p>6 รายการล่าสุด</p></div><a class="link" href="#/rc">ดูทั้งหมด / ยกเลิก-ลบ ${icon('chevronRight')}</a></div>
-        ${rec.length ? `<div class="rc-list">${rec.map(rcRow).join('')}</div>` : empty('receipt', 'ยังไม่มีใบเสร็จ', 'เริ่มรับผ้ารายการแรกได้เลย', `<a class="btn btn-primary" href="#/order">${icon('plus')}รับผ้าใหม่</a>`)}
       </section>`;
   }
 };

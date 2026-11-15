@@ -139,23 +139,24 @@ function summaryHTML() {
     </div>`).join('');
 
   return `
-    <div class="sum-head"><h2>${icon('receipt')}สรุปรายการ</h2>${cl.any ? `<button class="btn btn-ghost btn-sm" data-act="clearCart">${icon('trash')}ล้าง</button>` : ''}</div>
-    ${overBox}
+    <div class="sum-head"><div><span class="eyebrow">บิลปัจจุบัน</span><h2>สรุปรายการ</h2></div>${cl.any ? `<button class="btn btn-text btn-sm" data-act="clearCart">${icon('trash')}ล้างบิล</button>` : ''}</div>
+    <div class="sum-cust">${customerCard()}</div>
+    <div class="sum-scroll">${overBox}
     <div class="sum-lines">${cl.any ? lines + (cl.renewInfo ? `<div class="sum-line"><div class="sum-line-main"><b>${esc(cl.renewInfo.pkg.name)}</b><small>ต่อแพ็คเกจใหม่อัตโนมัติ${cl.renewInfo.cycles > 1 ? ' x' + cl.renewInfo.cycles : ''}</small></div><span class="sum-line-amt">${fm(cl.renewInfo.fee)}</span></div>` : '')
-      : `<div class="sum-empty">${icon('shirt')}<p>แตะที่รายการผ้าเพื่อเพิ่มลงบิล</p></div>`}</div>
+      : `<div class="sum-empty"><span>${icon('shirt')}</span><p>ยังไม่มีรายการ<br><small>แตะการ์ดผ้าทางซ้ายเพื่อเพิ่มลงบิล</small></p></div>`}</div></div>
     <div class="sum-foot">
       <div class="sum-row"><span>จำนวน</span><b>${cl.pcsTot} ชิ้น${cl.kgTot ? ' + ' + fm(cl.kgTot) + ' กก.' : ''}</b></div>
       ${cl.use ? `<div class="sum-row"><span>ใช้แพ็คเกจ</span><b>${cl.use} ชิ้น</b></div>` : ''}
       ${cl.hasPkg && cl.any ? `<div class="sum-row"><span>คงเหลือหลังบิลนี้</span><b class="${cl.left < 0 ? 'owed' : ''}">${pcs(cl.left)}</b></div>` : ''}
-      <div class="sum-total"><span>ต้องชำระ</span><b>${fm(cl.pay)}<small> บาท</small></b></div>
-      <button class="btn btn-primary btn-lg btn-block" data-act="checkout" ${cl.any ? '' : 'disabled'}>${icon('printer')}บันทึก + พิมพ์ใบเสร็จ</button>
+      <div class="sum-total"><span>ยอดชำระ</span><b><small>฿</small>${fm(cl.pay)}</b></div>
+      <button class="btn btn-pay btn-lg btn-block" data-act="checkout" ${cl.any ? '' : 'disabled'}>${icon('printer')}ชำระเงิน · พิมพ์ใบเสร็จ</button>
     </div>`;
 }
 
 function barHTML() {
   const cl = calc();
-  return `<div class="pos-bar-info"><small>${cl.pcsTot} ชิ้น${cl.kgTot ? ' + ' + fm(cl.kgTot) + ' กก.' : ''}${cl.use ? ' · ใช้แพ็คเกจ ' + cl.use : ''}${cl.carry ? ' · ทบ ' + cl.carry : ''}</small><b>${fm(cl.pay)} <small>บาท</small></b></div>
-    <button class="btn btn-primary" data-act="checkout" ${cl.any ? '' : 'disabled'}>${icon('printer')}บันทึก + พิมพ์</button>`;
+  return `<div class="pos-bar-info"><small>${esc(cust(state.sel) ? cust(state.sel).name : 'ลูกค้าทั่วไป')} · ${cl.pcsTot} ชิ้น${cl.kgTot ? ' + ' + fm(cl.kgTot) + ' กก.' : ''}${cl.use ? ' · ใช้แพ็คเกจ ' + cl.use : ''}${cl.carry ? ' · ทบ ' + cl.carry : ''}</small><b><small>฿</small>${fm(cl.pay)}</b></div>
+    <button class="btn btn-pay" data-act="checkout" ${cl.any ? '' : 'disabled'}>${icon('printer')}ชำระเงิน</button>`;
 }
 
 function refreshOrder(ids) {
@@ -171,7 +172,7 @@ function groupHead(gr, items) {
     : c && active(c) ? badge('ใช้แพ็คเกจได้', 'success', 'check')
     : c && c.pkgId ? badge('ทบไปแพ็คเกจถัดไปได้', 'warning', 'layers')
     : badge('หักแพ็คเกจได้', 'primary', 'package');
-  return `<div class="sec-head grp-sec" id="grp-${gr.id}" style="${grpStyle(gr)}"><span class="grp-bar"></span><h2>${esc(gr.name)}</h2>${tag}</div>`;
+  return `<div class="sec-head grp-sec" id="grp-${gr.id}" style="${grpStyle(gr)}"><span class="grp-bar"></span><h2>${esc(gr.name)}</h2><span class="sec-n">${items.length} รายการ</span>${tag}</div>`;
 }
 
 V.order = {
@@ -180,14 +181,16 @@ V.order = {
     return `
       <div class="pos">
         <div class="pos-main">
-          ${pageHead('รับผ้า / คิดเงิน', 'เลือกลูกค้า เพิ่มรายการผ้า แล้วบันทึกเพื่อพิมพ์ใบเสร็จ')}
-          <div class="card cust-card">${customerCard()}</div>
-          ${groups.length > 1 ? `<nav class="grp-jump" aria-label="ไปยังหมวด">${groups.map(({ gr, items }) => `<button class="chip grp-chip" style="${grpStyle(gr)}" data-act="grpJump" data-id="${gr.id}"><i class="grp-dot"></i>${esc(gr.name)}<span class="chip-n">${items.length}</span></button>`).join('')}</nav>` : ''}
-          ${groups.length ? groups.map(({ gr, items }) => `${groupHead(gr, items)}<div class="tile-grid grp-tiles" style="${grpStyle(gr)}">${items.map(tileHTML).join('')}</div>`).join('')
-              + `<button class="btn btn-ghost manage-link" data-act="goPrice">${icon('layers')}เพิ่มหมวด / แก้ราคา (แอดมิน)</button>`
-            : `<div class="card">${empty('shirt', 'ยังไม่มีรายการผ้า', 'เพิ่มหมวดและรายการผ้าได้ในหน้าผู้ดูแลระบบ', `<button class="btn btn-soft" data-act="goPrice">${icon('layers')}เพิ่มหมวดและราคา</button>`)}</div>`}
+          <header class="pos-head">
+            <div><span class="eyebrow">${icon('washer')}จุดรับผ้า</span><h1>รับผ้า / คิดเงิน</h1></div>
+            <button class="btn btn-ghost btn-sm" data-act="goPrice">${icon('sliders')}จัดการราคา</button>
+          </header>
+          <div class="cust-mobile">${customerCard()}</div>
+          ${groups.length > 1 ? `<nav class="cat-tabs" aria-label="ไปยังหมวด">${groups.map(({ gr, items }) => `<button class="cat grp-chip" style="${grpStyle(gr)}" data-act="grpJump" data-id="${gr.id}"><i class="grp-dot"></i>${esc(gr.name)}<span class="chip-n">${items.length}</span></button>`).join('')}</nav>` : ''}
+          ${groups.length ? groups.map(({ gr, items }) => `<section class="cat-sec">${groupHead(gr, items)}<div class="tile-grid grp-tiles" style="${grpStyle(gr)}">${items.map(tileHTML).join('')}</div></section>`).join('')
+            : `<div class="panel">${empty('shirt', 'ยังไม่มีรายการผ้า', 'เพิ่มหมวดและรายการผ้าได้ในหน้าผู้ดูแลระบบ', `<button class="btn btn-primary" data-act="goPrice">${icon('layers')}เพิ่มหมวดและราคา</button>`)}</div>`}
         </div>
-        <aside class="pos-side"><div class="card sum" id="pos-sum">${summaryHTML()}</div></aside>
+        <aside class="pos-side"><div class="ticket sum" id="pos-sum">${summaryHTML()}</div></aside>
       </div>
       <div class="pos-bar" id="pos-bar">${barHTML()}</div>`;
   }

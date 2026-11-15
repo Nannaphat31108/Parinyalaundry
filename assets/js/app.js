@@ -26,61 +26,54 @@ function backupAge() {
   return daysBetween(db.lastBackup, today());
 }
 
-function renderSidebar() {
-  const follow = db.customers.filter(needsFollow).length;
-  let g = '', nav = '';
-  TABS.forEach(t => {
-    if (t.g !== g) { g = t.g; nav += `<div class="nav-group">${g}</div>`; }
-    const count = t.k === 'cust' && follow ? `<span class="nav-count" title="ต้องติดตาม">${follow}</span>` : '';
-    nav += `<a href="#/${t.k}" class="nav-item ${state.route === t.k ? 'on' : ''}" ${state.route === t.k ? 'aria-current="page"' : ''} title="${t.l}">
-      <span class="nav-ic">${icon(t.ic)}</span><span class="nav-label">${t.l}</span>${count}</a>`;
-  });
-  const age = backupAge();
-  const synced = syncOn(), warn = !synced && (age == null || age > 7);
-  $('#sidebar').innerHTML = `
-    <a class="brand" href="#/home">${brandMark()}<span class="brand-text"><b>${esc(db.shop.name)}</b><small>ระบบจัดการร้านซักรีด</small></span></a>
-    <nav class="nav">${nav}</nav>
-    <div class="side-foot">
-      ${isStandalone() ? '' : `<button class="install-side" data-act="installApp" title="ติดตั้งเป็นแอป">${icon('download')}<span>ติดตั้งเป็นแอป</span></button>`}
-      <div class="backup-card ${warn ? 'warn' : ''}">
-        <span class="backup-ic">${icon(warn ? 'alert' : 'shield')}</span>
-        <div><b>${warn ? 'ควรสำรองข้อมูล' : synced ? 'ซิงค์ออนไลน์' : 'ข้อมูลปลอดภัย'}</b><small>${synced ? 'ข้อมูลเก็บบนคลาวด์ ใช้ได้หลายเครื่อง' : age == null ? 'ยังไม่เคยสำรองข้อมูล' : age === 0 ? 'สำรองล่าสุดวันนี้' : 'สำรองล่าสุด ' + age + ' วันก่อน'}</small></div>
-        <button class="icon-btn sm" data-act="backup" title="ดาวน์โหลดไฟล์สำรอง" aria-label="ดาวน์โหลดไฟล์สำรอง">${icon('download')}</button>
-      </div>
-    </div>`;
+/** สถานะการสำรองข้อมูล ใช้ในเมนูบัญชีร้าน */
+function backupState() {
+  const age = backupAge(), synced = syncOn();
+  const warn = !synced && (age == null || age > 7);
+  return { warn, synced, text: synced ? 'ซิงค์ออนไลน์แล้ว' : age == null ? 'ยังไม่เคยสำรองข้อมูล' : age === 0 ? 'สำรองล่าสุดวันนี้' : 'สำรองล่าสุด ' + age + ' วันก่อน' };
 }
 
+/* ไม่มีแถบเมนูด้านข้างแล้ว — คงฟังก์ชันไว้ให้โค้ดเดิมเรียกได้ */
+function renderSidebar() { renderTopbar(); }
+
 function renderTopbar() {
-  const t = TABS.find(x => x.k === state.route) || TABS[0];
-  const h = new Date().getHours();
+  const follow = db.customers.filter(needsFollow).length;
+  const bk = backupState();
+  const nav = TABS.map(t => {
+    const on = state.route === t.k;
+    const count = t.k === 'cust' && follow ? `<i class="tn-count">${follow}</i>` : '';
+    return `<a href="#/${t.k}" class="tn ${on ? 'on' : ''}" ${on ? 'aria-current="page"' : ''}>${icon(t.ic)}<span>${t.short || t.l}</span>${count}</a>`;
+  }).join('');
   $('#topbar').innerHTML = `
-    <a class="top-brand" href="#/home">${brandMark('sm')}<b>${esc(db.shop.name)}</b></a>
-    <div class="crumbs"><span>${esc(db.shop.name)}</span>${icon('chevronRight')}<b>${t.l}</b></div>
-    <div class="top-right">
-      ${syncChip()}
-      <a class="admin-chip prn-chip" href="#/prn" title="เครื่องพิมพ์">${icon('printer')}<span>เครื่องพิมพ์</span></a>
-      ${isAdmin()
-        ? `<button class="admin-chip on" data-act="adminLock" title="ล็อกโหมดแอดมิน">${icon('shield')}<span>แอดมิน</span>${icon('lock')}</button>`
-        : `<button class="admin-chip" data-act="adminLogin" title="เข้าสู่โหมดแอดมิน">${icon('lock')}<span>แอดมิน</span></button>`}
-      <span class="date-pill">${icon(h >= 18 || h < 6 ? 'moon' : 'sun')}<span>${dLong()}</span></span>
-      ${state.route !== 'order' ? `<a class="btn btn-primary btn-sm top-cta" href="#/order">${icon('plus')}รับผ้าใหม่</a>` : ''}
+    <div class="tb-inner">
+      <a class="logo" href="#/home">${brandMark()}<span class="logo-txt"><b>${esc(db.shop.name)}</b><small>Laundry POS</small></span></a>
+      <nav class="tabnav" aria-label="เมนูหลัก">${nav}</nav>
+      <div class="tb-tools">
+        ${syncChip()}
+        <button class="tool ${bk.warn ? 'warn' : ''}" data-act="backup" title="${bk.text} — ดาวน์โหลดไฟล์สำรอง" aria-label="สำรองข้อมูล">${icon('database')}${bk.warn ? '<i class="tool-dot"></i>' : ''}</button>
+        ${isAdmin()
+          ? `<button class="tool on" data-act="adminLock" title="ล็อกโหมดแอดมิน" aria-label="ล็อกโหมดแอดมิน">${icon('shield')}</button>`
+          : `<button class="tool" data-act="adminLogin" title="เข้าสู่โหมดแอดมิน" aria-label="เข้าสู่โหมดแอดมิน">${icon('lock')}</button>`}
+        ${isStandalone() ? '' : `<button class="tool hide-sm" data-act="installApp" title="ติดตั้งเป็นแอป" aria-label="ติดตั้งเป็นแอป">${icon('download')}</button>`}
+        ${state.route !== 'order' ? `<a class="btn btn-primary btn-sm tb-cta" href="#/order">${icon('plus')}<span>รับผ้าใหม่</span></a>` : ''}
+      </div>
     </div>`;
 }
 
 function renderBottomNav() {
   const more = ['pkg', 'acct', 'prn', 'set'].includes(state.route);
-  $('#bottom-nav').innerHTML = MOBILE_TABS.map(k => {
-    if (k === 'more') return `<button class="bn-item ${more ? 'on' : ''}" data-act="moreMenu">${icon('grid')}<span>เพิ่มเติม</span></button>`;
+  $('#bottom-nav').innerHTML = `<div class="dock-in">${MOBILE_TABS.map(k => {
+    if (k === 'more') return `<button class="dk ${more ? 'on' : ''}" data-act="moreMenu">${icon('grid')}<span>เมนู</span></button>`;
     const t = TABS.find(x => x.k === k);
-    if (k === 'order') return `<a class="bn-fab ${state.route === k ? 'on' : ''}" href="#/order" aria-label="${t.l}"><span>${icon('plus')}</span><em>รับผ้า</em></a>`;
-    return `<a class="bn-item ${state.route === k ? 'on' : ''}" href="#/${k}">${icon(t.ic)}<span>${t.short || t.l}</span></a>`;
-  }).join('');
+    if (k === 'order') return `<a class="dk-fab ${state.route === k ? 'on' : ''}" href="#/order" aria-label="${t.l}">${icon('plus')}</a>`;
+    return `<a class="dk ${state.route === k ? 'on' : ''}" href="#/${k}">${icon(t.ic)}<span>${t.short || t.l}</span></a>`;
+  }).join('')}</div>`;
 }
 
 ACT.moreMenu = () => {
   const m = openModal({
     title: 'เมนูเพิ่มเติม', ic: 'grid', size: 'sm', cls: 'sheet',
-    body: `<div class="more-grid">${TABS.map(t => `<a href="#/${t.k}" class="more-item ${state.route === t.k ? 'on' : ''}" data-close><span class="nav-ic">${icon(t.ic)}</span>${t.l}</a>`).join('')}</div>
+    body: `<div class="more-grid">${TABS.map(t => `<a href="#/${t.k}" class="more-item ${state.route === t.k ? 'on' : ''}" data-close><span class="more-ic">${icon(t.ic)}</span><span>${t.l}</span></a>`).join('')}</div>
       ${isStandalone() ? '' : `<button class="btn btn-soft btn-block install-btn" data-act="installApp" data-close>${icon('download')}ติดตั้งเป็นแอปบนเครื่องนี้</button>`}`
   });
   return m;
@@ -90,7 +83,7 @@ let lastRoute = null;
 function render() {
   document.body.classList.toggle('is-admin', isAdmin());
   if (lastRoute !== state.route) { state.ledLimit = 50; state.rcLimit = 50; }
-  renderSidebar(); renderTopbar(); renderBottomNav();
+  renderTopbar(); renderBottomNav();
   const v = V[state.route] || V.home;
   const main = $('#main');
   main.innerHTML = `<div class="page page-${state.route}">${v.render()}</div>`;
